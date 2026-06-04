@@ -19,7 +19,7 @@ export default function FormNhapLieu() {
     } = useFormLogic();
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#f0f7ff] p-4 font-sans relative">
+        <div className="fixed inset-0 overflow-hidden flex items-center justify-center bg-[#f0f7ff] p-4 font-sans">
             
             {/* HỆ THỐNG THÔNG BÁO SIÊU THON GỌN ĐÃ GIẢM CHIỀU RỘNG (max-w-[280px]) */}
             <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[99999] pointer-events-none w-full max-w-[280px] px-4 flex flex-col gap-2">
