@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
+import { flushSync } from 'react-dom';
 
 export function useFormLogic() {
     const [currentStep, setCurrentStep] = useState(0);
@@ -70,9 +71,23 @@ export function useFormLogic() {
         if (currentStep > 0) setCurrentStep(prev => prev - 1);
     };
 
+    const focusCurrentInput = () => {
+        if (inputRef.current) {
+            inputRef.current.focus({ preventScroll: true });
+        }
+    };
+
     const nextStep = async () => {
         if (currentStep < totalSteps - 1) {
-            setCurrentStep(prev => prev + 1);
+            const nextStepIndex = currentStep + 1;
+
+            flushSync(() => {
+                setCurrentStep(nextStepIndex);
+            });
+
+            if (steps[nextStepIndex].type !== 'car-select') {
+                focusCurrentInput();
+            }
         } else {
             await submitToGoogleSheet();
         }

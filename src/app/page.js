@@ -55,7 +55,7 @@ export default function FormNhapLieu() {
             </div>
 
             {/* CONTAINER FORM ĐÃ ĐƯỢC THU NHỎ CHIỀU RỘNG (max-w-[360px]) */}
-            <div className="bg-white rounded-[32px] p-6 w-full max-w-[360px] shadow-[0_10px_30px_rgba(0,123,255,0.1)] relative overflow-hidden flex flex-col min-h-[400px]">
+            <div className="bg-white rounded-[32px] p-6 w-full max-w-[360px] shadow-[0_10px_30px_rgba(0,123,255,0.1)] relative overflow-hidden flex flex-col min-h-[250px]">
                 <div className="relative flex-1 flex flex-col">
                     <AnimatePresence mode="popLayout">
                         <motion.div
@@ -66,9 +66,41 @@ export default function FormNhapLieu() {
                             transition={{ type: "spring", damping: 25, stiffness: 300 }}
                             className="absolute inset-0 w-full flex flex-col"
                         >
-                            <label className="block text-blue-600 text-[22px] font-black mb-4">
-                                {steps[currentStep].label}
-                            </label>
+                            <div className="flex items-center justify-between gap-3 mb-4">
+                                <label className="text-blue-600 text-[22px] font-black leading-tight min-w-0">
+                                    {steps[currentStep].label}
+                                </label>
+
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={prevStep}
+                                        disabled={currentStep === 0 || isSubmitting}
+                                        aria-label="Quay lại"
+                                        className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-[24px] leading-none font-black active:scale-95 transition-all disabled:opacity-40 disabled:hover:bg-slate-100 disabled:active:scale-100"
+                                    >
+                                        &larr;
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={nextStep}
+                                        disabled={isSubmitting}
+                                        className="bg-blue-500 hover:bg-blue-600 text-white font-black py-2 px-4 rounded-xl shadow-md active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 text-[14px] whitespace-nowrap min-h-9"
+                                    >
+                                        {isSubmitting ? (
+                                            <>
+                                                <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                                Đang gửi...
+                                            </>
+                                        ) : currentStep === totalSteps - 1 ? (
+                                            "Hoàn thành"
+                                        ) : (
+                                            "Tiếp theo"
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
                             
                             <div className="flex-1">
                                 {steps[currentStep].type === 'car-select' && (
@@ -137,38 +169,6 @@ export default function FormNhapLieu() {
                                 })}
                             </div>
 
-                            {/* Hệ thống nút bấm điều hướng */}
-                            <div className="flex items-center justify-between gap-3 mt-auto shrink-0">
-                                {currentStep > 0 ? (
-                                    <button
-                                        type="button"
-                                        onClick={prevStep}
-                                        className="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-3 px-5 rounded-xl active:scale-95 transition-all text-[14px]"
-                                    >
-                                        Quay lại
-                                    </button>
-                                ) : (
-                                    <div />
-                                )}
-
-                                <button
-                                    type="button"
-                                    onClick={nextStep}
-                                    disabled={isSubmitting}
-                                    className="bg-blue-500 hover:bg-blue-600 text-white font-black py-3 px-8 rounded-xl shadow-md active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 text-[14px]"
-                                >
-                                    {isSubmitting ? (
-                                        <>
-                                            <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                                            Đang gửi...
-                                        </>
-                                    ) : currentStep === totalSteps - 1 ? (
-                                        "Hoàn thành"
-                                    ) : (
-                                        "Tiếp theo"
-                                    )}
-                                </button>
-                            </div>
                         </motion.div>
                     </AnimatePresence>
                 </div>
