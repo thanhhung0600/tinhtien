@@ -143,6 +143,8 @@ export default function FormNhapLieu() {
                                     <input
                                         ref={inputRef}
                                         type={steps[currentStep].type}
+                                        inputMode={steps[currentStep].inputMode}
+                                        pattern={steps[currentStep].pattern}
                                         placeholder={steps[currentStep].placeholder}
                                         value={formData[steps[currentStep].id]}
                                         onChange={(e) => handleInputChange(steps[currentStep].id, e.target.value)}

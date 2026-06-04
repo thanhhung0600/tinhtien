@@ -33,10 +33,10 @@ export function useFormLogic() {
         },
         { id: 'ngay', label: 'Chọn ngày đi', type: 'date' },
         { id: 'noiDi', label: 'Nơi đi', type: 'text', placeholder: 'Ví dụ: Sài Gòn,...' },
-        { id: 'giaTien', label: 'Giá tiền', type: 'text', placeholder: 'Nhập giá tiền...' },
-        { id: 'xang', label: 'Giá xăng', type: 'text', placeholder: 'Nhập tiền xăng...' },
+        { id: 'giaTien', label: 'Giá tiền', type: 'text', inputMode: 'numeric', pattern: '[0-9]*', placeholder: 'Nhập giá tiền...' },
+        { id: 'xang', label: 'Giá xăng', type: 'text', inputMode: 'numeric', pattern: '[0-9]*', placeholder: 'Nhập tiền xăng...' },
         { id: 'taiXe', label: 'Tài xế', type: 'text', placeholder: 'Thái' },
-        { id: 'hoaHong', label: 'Hoa hồng', type: 'text', placeholder: 'Nhập tiền hoa hồng...' }
+        { id: 'hoaHong', label: 'Hoa hồng', type: 'text', inputMode: 'numeric', pattern: '[0-9]*', placeholder: 'Nhập tiền hoa hồng...' }
     ];
 
     const totalSteps = steps.length;
