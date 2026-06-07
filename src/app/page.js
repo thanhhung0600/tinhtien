@@ -168,7 +168,7 @@ export default function FormNhapLieu() {
                                     />
                                 )}
                             </div>
-// test
+
                             {/* Thanh tiến trình */}
                             <div className="flex gap-1.5 w-full mt-5 mb-5 shrink-0">
                                 {steps.map((step, index) => {
