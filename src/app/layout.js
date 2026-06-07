@@ -1,5 +1,4 @@
 import { Geist, Geist_Mono } from "next/font/google";
-import { Viewport } from "next/viewport";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -24,14 +23,6 @@ export const metadata = {
   title: "Thống kê",
   description: "Ứng dụng thống kê",
   manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Thống kê",
-  },
-  formatDetection: {
-    telephone: false,
-  },
 };
 
 export default function RootLayout({ children }) {
