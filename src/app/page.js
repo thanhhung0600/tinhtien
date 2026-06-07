@@ -55,7 +55,21 @@ export default function FormNhapLieu() {
             </div>
 
             {/* CONTAINER FORM ĐÃ ĐƯỢC THU NHỎ CHIỀU RỘNG (max-w-[360px]) */}
-            <div className="bg-white rounded-[32px] p-6 w-full max-w-[360px] shadow-[0_10px_30px_rgba(0,123,255,0.1)] relative overflow-hidden flex flex-col min-h-[250px]">
+            <div className="bg-white rounded-[32px] p-6 w-full max-w-[360px] shadow-[0_10px_30px_rgba(0,123,255,0.1)] relative overflow-visible flex flex-col min-h-[250px]">
+                
+                {/* Nút hình tròn dẫn đến Google Sheet */}
+                <a
+                    href="https://docs.google.com/spreadsheets/d/1yLna6sOzhmoo4wHrgE6AhQFanDH83eTaV6YbV4Jxrzg/edit?gid=0#gid=0"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute -top-10 right-0 w-10 h-10 bg-white border-2 border-gray-200 rounded-full flex items-center justify-center shadow-md hover:shadow-lg hover:border-gray-300 transition-all active:scale-95 z-50"
+                    title="Mở Google Sheet"
+                >
+                    <svg className="w-5 h-5 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" />
+                    </svg>
+                </a>
+                
                 <div className="relative flex-1 flex flex-col">
                     <AnimatePresence mode="popLayout">
                         <motion.div

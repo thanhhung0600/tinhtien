@@ -25,10 +25,10 @@ export function useFormLogic() {
             label: 'Chọn loại xe', 
             type: 'car-select',
             options: [
-                { name: 'Xe 4 chỗ', value: 'Xe 4 chỗ' },
-                { name: 'Xe 7 chỗ', value: 'Xe 7 chỗ' },
-                { name: 'Xe Tải A', value: 'Xe Tải A' },
-                { name: 'Xe Tải B', value: 'Xe Tải B' }
+                { name: 'Xe 4 Thái', value: 'Xe 4 Thái' },
+                { name: 'Xe 4 Học', value: 'Xe 4 Học' },
+                { name: 'Xe 7 Xpander', value: 'Xe 7 Xpander' },
+                { name: 'Xe 7 Innova', value: 'Xe 7 Innova' }
             ]
         },
         { id: 'ngay', label: 'Chọn ngày đi', type: 'date' },
