@@ -24,10 +24,10 @@ export function AppTabs({ activeTab, onTabChange }) {
                         key={tab.id}
                         type="button"
                         onClick={() => onTabChange(tab.id)}
-                        className={`h-11 w-[108px] text-[10px] font-black tracking-[0.1em] transition-all active:scale-[0.98] ${
+                        className={`w-[108px] text-[13px] font-black tracking-[0.1em] transition-all active:scale-[0.98] ${
                             isActive
-                                ? "bg-white text-blue-600 rounded-t-[22px] rounded-b-none shadow-none -mb-px"
-                                : "bg-blue-500 text-white rounded-full shadow-[0_8px_20px_rgba(59,130,246,0.24)] mb-2 hover:bg-blue-600"
+                                ? "h-[52px] bg-white text-blue-600 rounded-t-[22px] rounded-b-none shadow-none pb-2"
+                                : "h-11 bg-blue-500 text-white rounded-full shadow-[0_8px_20px_rgba(59,130,246,0.24)] mb-2 hover:bg-blue-600"
                         }`}
                     >
                         {tab.label}

@@ -193,7 +193,7 @@ export default function FormNhapLieu() {
 
                 <div
                     className={`bg-white rounded-[32px] w-full shadow-[0_10px_30px_rgba(0,123,255,0.1)] relative overflow-visible flex flex-col ${
-                        isStatsTab ? "p-3 min-h-[285px]" : "p-6 min-h-[250px]"
+                        isStatsTab ? "p-2.5 min-h-[285px]" : "p-6 min-h-[250px]"
                     }`}
                 >
                     {activeTab === APP_TABS.INPUT && (

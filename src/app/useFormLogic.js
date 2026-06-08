@@ -2,6 +2,26 @@
 import { useState, useEffect, useRef } from 'react';
 import { flushSync } from 'react-dom';
 
+const FORM_STEPS = [
+    {
+        id: 'loaiXe',
+        label: 'Chọn loại xe',
+        type: 'car-select',
+        options: [
+            { name: 'Xe 4 Thái', value: 'Xe 4 Thái' },
+            { name: 'Xe 4 Học', value: 'Xe 4 Học' },
+            { name: 'Xe 7 Xpander', value: 'Xe 7 Xpander' },
+            { name: 'Xe 7 Innova', value: 'Xe 7 Innova' }
+        ]
+    },
+    { id: 'ngay', label: 'Chọn ngày đi', type: 'date' },
+    { id: 'noiDi', label: 'Nơi đi', type: 'text', placeholder: 'Ví dụ: Sài Gòn,...' },
+    { id: 'giaTien', label: 'Giá tiền', type: 'text', inputMode: 'numeric', pattern: '[0-9]*', placeholder: 'Nhập giá tiền...' },
+    { id: 'xang', label: 'Giá xăng', type: 'text', inputMode: 'numeric', pattern: '[0-9]*', placeholder: 'Nhập tiền xăng...' },
+    { id: 'taiXe', label: 'Tài xế', type: 'text', placeholder: 'Thái' },
+    { id: 'hoaHong', label: 'Hoa hồng', type: 'text', inputMode: 'numeric', pattern: '[0-9]*', placeholder: 'Nhập tiền hoa hồng...' }
+];
+
 export function useFormLogic() {
     const [currentStep, setCurrentStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -19,30 +39,10 @@ export function useFormLogic() {
         hoaHong: ''
     });
 
-    const steps = [
-        { 
-            id: 'loaiXe', 
-            label: 'Chọn loại xe', 
-            type: 'car-select',
-            options: [
-                { name: 'Xe 4 Thái', value: 'Xe 4 Thái' },
-                { name: 'Xe 4 Học', value: 'Xe 4 Học' },
-                { name: 'Xe 7 Xpander', value: 'Xe 7 Xpander' },
-                { name: 'Xe 7 Innova', value: 'Xe 7 Innova' }
-            ]
-        },
-        { id: 'ngay', label: 'Chọn ngày đi', type: 'date' },
-        { id: 'noiDi', label: 'Nơi đi', type: 'text', placeholder: 'Ví dụ: Sài Gòn,...' },
-        { id: 'giaTien', label: 'Giá tiền', type: 'text', inputMode: 'numeric', pattern: '[0-9]*', placeholder: 'Nhập giá tiền...' },
-        { id: 'xang', label: 'Giá xăng', type: 'text', inputMode: 'numeric', pattern: '[0-9]*', placeholder: 'Nhập tiền xăng...' },
-        { id: 'taiXe', label: 'Tài xế', type: 'text', placeholder: 'Thái' },
-        { id: 'hoaHong', label: 'Hoa hồng', type: 'text', inputMode: 'numeric', pattern: '[0-9]*', placeholder: 'Nhập tiền hoa hồng...' }
-    ];
-
-    const totalSteps = steps.length;
+    const totalSteps = FORM_STEPS.length;
 
     useEffect(() => {
-        if (inputRef.current && steps[currentStep].type !== 'car-select') {
+        if (inputRef.current && FORM_STEPS[currentStep].type !== 'car-select') {
             setTimeout(() => inputRef.current.focus(), 100);
         }
     }, [currentStep]);
@@ -85,7 +85,7 @@ export function useFormLogic() {
                 setCurrentStep(nextStepIndex);
             });
 
-            if (steps[nextStepIndex].type !== 'car-select') {
+            if (FORM_STEPS[nextStepIndex].type !== 'car-select') {
                 focusCurrentInput();
             }
         } else {
@@ -138,7 +138,7 @@ export function useFormLogic() {
         handleInputChange,
         nextStep,
         prevStep,
-        steps,
+        steps: FORM_STEPS,
         totalSteps,
         isSubmitting,
         errorToast,

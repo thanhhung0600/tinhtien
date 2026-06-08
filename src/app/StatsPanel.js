@@ -1,59 +1,40 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { animate, AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
+import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 
-const currentMonthLabel = "THÁNG 6, 2026";
-const maxVehicleBarHeight = 66;
-const maxTrendBarHeight = 68;
-const trendChartHeight = 132;
-const trendChartWidth = 272;
-const trendChartHorizontalPadding = 28;
-
-const vehicleCounts = {
-    xe4Thai: 18,
-    xe4Hoc: 4,
-    xe7Xpander: 19,
-    xe7Innova: 3,
+const defaultStats = {
+    currentMonthLabel: "THÁNG 6, 2026",
+    vehicleStats: [
+        { id: "xe4Thai", name: "Xe 4 Thái", shortName: "4 THÁI", trips: 0, revenue: 0, color: "bg-blue-500" },
+        { id: "xe4Hoc", name: "Xe 4 Học", shortName: "4 HỌC", trips: 0, revenue: 0, color: "bg-indigo-400" },
+        { id: "xe7Xpander", name: "Xe 7 Xpander", shortName: "7 XPA", trips: 0, revenue: 0, color: "bg-teal-400" },
+        { id: "xe7Innova", name: "Xe 7 Innova", shortName: "7 INN", trips: 0, revenue: 0, color: "bg-emerald-400" },
+    ],
+    totalActiveVehicles: 0,
 };
 
-const totalActiveVehicles = 45;
-const monthlyRevenue = 128_500_000;
+function getCurrentMonthState() {
+    const now = new Date();
+    return { year: now.getFullYear(), month: now.getMonth() + 1 };
+}
 
-const vehicleStats = [
-    { label: ["4", "THÁI"], value: vehicleCounts.xe4Thai, color: "bg-blue-500" },
-    { label: ["4", "HỌC"], value: vehicleCounts.xe4Hoc, color: "bg-indigo-400" },
-    { label: ["7", "XPA"], value: vehicleCounts.xe7Xpander, color: "bg-teal-400" },
-    { label: ["7", "INN"], value: vehicleCounts.xe7Innova, color: "bg-emerald-400" },
-];
+function getMonthLabel({ year, month }) {
+    return `THÁNG ${month}, ${year}`;
+}
 
-const monthlyTrend = [
-    { label: "THÁNG 3", value: 8 },
-    { label: "THÁNG 4", value: 14 },
-    { label: "THÁNG 5", value: 22 },
-    { label: "THÁNG 6", value: totalActiveVehicles },
-];
-
-const maxVehicleCount = Math.max(...vehicleStats.map((item) => item.value), 1);
-const maxTrendValue = Math.max(...monthlyTrend.map((item) => item.value), 1);
-
-function getBarHeight(value, maxValue, maxHeight) {
-    if (value <= 0) return 0;
-    return Math.max(8, Math.round((value / maxValue) * maxHeight));
+function moveMonth({ year, month }, offset) {
+    const date = new Date(year, month - 1 + offset, 1);
+    return { year: date.getFullYear(), month: date.getMonth() + 1 };
 }
 
 function formatRevenue(value) {
+    if (Math.abs(value) < 1_000_000) {
+        return new Intl.NumberFormat("vi-VN").format(Math.round(value));
+    }
+
     const millionValue = value / 1_000_000;
     return `${millionValue % 1 === 0 ? millionValue.toFixed(0) : millionValue.toFixed(1)}M`;
-}
-
-function getTrendPoint(index, value) {
-    const usableWidth = trendChartWidth - trendChartHorizontalPadding * 2;
-    const x = trendChartHorizontalPadding + (usableWidth / (monthlyTrend.length - 1)) * index;
-    const barHeight = getBarHeight(value, maxTrendValue, maxTrendBarHeight);
-    const y = trendChartHeight - barHeight - 1;
-
-    return { x, y, barHeight };
 }
 
 function AnimatedNumber({ value, className, formatter = Math.round }) {
@@ -72,43 +53,68 @@ function AnimatedNumber({ value, className, formatter = Math.round }) {
     return <motion.div className={className}>{displayValue}</motion.div>;
 }
 
-function MonthToolbar({ mode, onToggleMode }) {
+function MonthToolbar({
+    currentMonthLabel,
+    totalActiveVehicles,
+    isLoading,
+    onPreviousMonth,
+    onNextMonth,
+    onCurrentMonth,
+}) {
     return (
         <div className="flex flex-col gap-2">
             <div className="grid grid-cols-[34px_1fr_34px] items-center gap-2">
                 <button
                     type="button"
+                    onClick={onPreviousMonth}
+                    disabled={isLoading}
                     aria-label="Tháng trước"
-                    className="h-8 rounded-xl bg-white border border-slate-200 text-slate-500 shadow-[0_3px_10px_rgba(15,23,42,0.12)] text-[21px] leading-none font-black active:scale-95"
+                    className="h-8 rounded-xl bg-white border border-slate-200 text-slate-500 shadow-[0_3px_10px_rgba(15,23,42,0.12)] text-[21px] leading-none font-black active:scale-95 disabled:opacity-50 disabled:active:scale-100"
                 >
                     ‹
                 </button>
 
-                <div className="h-8 rounded-xl bg-white border border-slate-200 shadow-[0_3px_10px_rgba(15,23,42,0.12)] flex items-center justify-center text-blue-600 text-[12px] font-black tracking-[0.08em]">
+                <button
+                    type="button"
+                    onClick={onCurrentMonth}
+                    disabled={isLoading}
+                    aria-label="Về tháng hiện tại"
+                    className="h-8 rounded-xl bg-white border border-slate-200 shadow-[0_3px_10px_rgba(15,23,42,0.12)] flex items-center justify-center text-blue-600 text-[12px] font-black tracking-[0.08em] active:scale-[0.98] transition-all disabled:opacity-60 disabled:active:scale-100"
+                >
                     {currentMonthLabel}
-                </div>
+                </button>
 
                 <button
                     type="button"
+                    onClick={onNextMonth}
+                    disabled={isLoading}
                     aria-label="Tháng sau"
-                    className="h-8 rounded-xl bg-white border border-slate-200 text-slate-500 shadow-[0_3px_10px_rgba(15,23,42,0.12)] text-[21px] leading-none font-black active:scale-95"
+                    className="h-8 rounded-xl bg-white border border-slate-200 text-slate-500 shadow-[0_3px_10px_rgba(15,23,42,0.12)] text-[21px] leading-none font-black active:scale-95 disabled:opacity-50 disabled:active:scale-100"
                 >
                     ›
                 </button>
             </div>
 
-            <button
-                type="button"
-                onClick={onToggleMode}
-                className="self-end h-7 px-3 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-[10px] font-black active:scale-95 transition-all"
-            >
-                {mode === "monthly" ? "XU HƯỚNG" : "THÁNG NÀY"}
-            </button>
+            <div className="flex items-center justify-between gap-2">
+                <div className="min-w-[132px] min-h-9 rounded-lg bg-blue-500 px-3 py-2 text-white shadow-[0_4px_10px_rgba(59,130,246,0.2)] flex items-center justify-center gap-2">
+                    <span className="text-[9px] font-black uppercase leading-tight text-blue-100">Tổng xe hoạt động</span>
+                    <AnimatedNumber value={totalActiveVehicles} className="text-[18px] font-black leading-none" />
+                </div>
+
+                {isLoading && (
+                    <div className="h-7 px-2.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-[9px] font-black flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full border-2 border-blue-200 border-t-blue-600 animate-spin" />
+                        Đang tải
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
 
-function MonthlySummary() {
+function MonthlySummary({ vehicleStats, maxTripCount, totalActiveVehicles, isLoading }) {
+    const isEmpty = !isLoading && totalActiveVehicles === 0;
+
     return (
         <motion.div
             key="monthly"
@@ -116,157 +122,131 @@ function MonthlySummary() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 18 }}
             transition={{ type: "spring", damping: 24, stiffness: 260 }}
-            className="grid grid-cols-[170px_128px] gap-2"
+            className="flex flex-col gap-2"
         >
-            <section className="rounded-xl bg-slate-50 border border-slate-200 px-2 pt-2 pb-1.5 shadow-[0_5px_14px_rgba(15,23,42,0.06)]">
-                <div className="h-[96px] flex items-end justify-between gap-1 border-b border-slate-200">
-                    {vehicleStats.map((item) => (
-                        <div
-                            key={item.label.join("-")}
-                            className="flex-1 h-full flex flex-col items-center justify-end min-w-0"
-                        >
-                            <AnimatedNumber
-                                value={item.value}
-                                className="text-[10px] font-black text-slate-700 mb-1"
-                            />
-                            <motion.div
-                                initial={{ height: 0 }}
-                                animate={{
-                                    height: getBarHeight(item.value, maxVehicleCount, maxVehicleBarHeight),
-                                }}
-                                transition={{ type: "spring", damping: 18, stiffness: 140, delay: 0.08 }}
-                                className={`w-4 ${item.color} rounded-t-lg`}
-                            />
+            <section className="hidden rounded-xl bg-blue-500 px-3 py-2 text-white shadow-[0_5px_14px_rgba(59,130,246,0.2)]">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <div className="text-[9px] font-black uppercase text-blue-100 leading-tight">
+                            Tổng xe hoạt động
                         </div>
-                    ))}
-                </div>
-
-                <div className="grid grid-cols-4 gap-0.5 pt-1.5">
-                    {vehicleStats.map((item) => (
-                        <div
-                            key={item.label.join("-")}
-                            className="text-center text-[7px] font-black text-slate-500 leading-[0.95] min-w-0"
-                        >
-                            <span className="block">{item.label[0]}</span>
-                            <span className="block">{item.label[1]}</span>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            <div className="grid grid-rows-2 gap-2">
-                <section className="rounded-xl bg-blue-500 px-3 py-2 text-white shadow-[0_5px_14px_rgba(59,130,246,0.2)]">
-                    <div className="text-[9px] font-black uppercase text-blue-100 leading-tight">
-                        Xe hoạt động
+                        <div className="text-[9px] font-bold text-blue-100 mt-0.5">trong tháng</div>
                     </div>
                     <AnimatedNumber
                         value={totalActiveVehicles}
-                        className="text-[24px] font-black leading-none mt-1.5"
+                        className="text-[28px] font-black leading-none"
                     />
-                    <div className="text-[9px] font-bold text-blue-100 mt-0.5">trong tháng</div>
-                </section>
+                </div>
+            </section>
 
-                <section className="rounded-xl bg-emerald-400 px-3 py-2 text-white shadow-[0_5px_14px_rgba(16,185,129,0.18)]">
-                    <div className="text-[9px] font-black uppercase text-emerald-50 leading-tight">
-                        Doanh thu
+            <section className={`rounded-xl bg-slate-50 border border-slate-200 px-2.5 py-2 shadow-[0_5px_14px_rgba(15,23,42,0.06)] transition-opacity ${isLoading ? "opacity-55" : "opacity-100"}`}>
+                <div className="grid grid-cols-[1fr_44px_64px] px-1 pb-1.5 text-[8px] font-black uppercase text-slate-400">
+                    <div>Loại xe</div>
+                    <div className="text-center">Xe</div>
+                    <div className="text-right">Doanh thu</div>
+                </div>
+
+                {isEmpty ? (
+                    <div className="rounded-lg bg-white border border-slate-100 px-3 py-6 text-center text-[11px] font-bold text-slate-400">
+                        Chưa có dữ liệu tháng này
                     </div>
-                    <AnimatedNumber
-                        value={monthlyRevenue}
-                        formatter={formatRevenue}
-                        className="text-[18px] font-black leading-none mt-1.5"
-                    />
-                    <div className="text-[9px] font-bold text-emerald-50 mt-0.5">tạm tính</div>
-                </section>
-            </div>
+                ) : (
+                    <div className="flex flex-col gap-1.5">
+                        {vehicleStats.map((item, index) => (
+                            <motion.div
+                                key={item.id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ type: "spring", damping: 22, stiffness: 260, delay: 0.05 + index * 0.04 }}
+                                className="rounded-lg bg-white border border-slate-100 px-2 py-1.5"
+                            >
+                                <div className="grid grid-cols-[1fr_44px_64px] items-center gap-1">
+                                    <div className="min-w-0">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className={`w-2 h-2 rounded-full ${item.color}`} />
+                                            <span className="text-[10px] font-black text-slate-700 truncate">
+                                                {item.name}
+                                            </span>
+                                        </div>
+                                        <div className="mt-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                            <motion.div
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${Math.max(6, (item.trips / maxTripCount) * 100)}%` }}
+                                                transition={{ duration: 0.55, ease: "easeOut", delay: 0.12 + index * 0.04 }}
+                                                className={`h-full rounded-full ${item.color}`}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <AnimatedNumber
+                                        value={item.trips}
+                                        className="text-center text-[14px] font-black text-blue-600"
+                                    />
+
+                                    <AnimatedNumber
+                                        value={item.revenue}
+                                        formatter={formatRevenue}
+                                        className="text-right text-[12px] font-black text-slate-700"
+                                    />
+                                </div>
+                            </motion.div>
+                        ))}
+                    </div>
+                )}
+            </section>
         </motion.div>
     );
 }
 
-function TrendSummary() {
-    const trendPoints = monthlyTrend.map((item, index) => getTrendPoint(index, item.value));
-
-    return (
-        <motion.section
-            key="trend"
-            initial={{ opacity: 0, x: 18 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -18 }}
-            transition={{ type: "spring", damping: 24, stiffness: 260 }}
-            className="rounded-xl bg-slate-50 border border-slate-200 px-2.5 pt-2 pb-1.5 shadow-[0_5px_14px_rgba(15,23,42,0.06)]"
-        >
-            <div className="text-[10px] font-black text-slate-400 mb-1">
-                XU HƯỚNG 4 THÁNG: <span className="text-blue-600">TỔNG HỢP</span>
-            </div>
-
-            <div className="relative h-[132px] border-b border-slate-200">
-                <svg
-                    className="absolute inset-0 w-full h-full pointer-events-none z-0"
-                    viewBox={`0 0 ${trendChartWidth} ${trendChartHeight}`}
-                    preserveAspectRatio="none"
-                    aria-hidden="true"
-                >
-                    <motion.polyline
-                        points={trendPoints.map((point) => `${point.x},${point.y}`).join(" ")}
-                        fill="none"
-                        stroke="#3b82f6"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        initial={{ pathLength: 0, opacity: 0 }}
-                        animate={{ pathLength: 1, opacity: 1 }}
-                        transition={{ duration: 0.65, ease: "easeOut", delay: 0.18 }}
-                    />
-                </svg>
-
-                {monthlyTrend.map((item, index) => {
-                    const point = trendPoints[index];
-
-                    return (
-                    <div
-                        key={item.label}
-                        className="absolute bottom-0 z-10 flex flex-col items-center"
-                        style={{ left: `${(point.x / trendChartWidth) * 100}%`, transform: "translateX(-50%)" }}
-                    >
-                        <AnimatedNumber value={item.value} className="text-[10px] font-black text-slate-700 mb-1" />
-                        <div className="relative flex items-end justify-center">
-                            <motion.div
-                                initial={{ height: 0 }}
-                                animate={{
-                                    height: point.barHeight,
-                                }}
-                                transition={{
-                                    type: "spring",
-                                    damping: 18,
-                                    stiffness: 140,
-                                    delay: 0.12 + index * 0.04,
-                                }}
-                                className="w-4 rounded-t-lg bg-slate-400"
-                            />
-                            <motion.div
-                                initial={{ scale: 0, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ delay: 0.4 + index * 0.04, type: "spring", damping: 12 }}
-                                className="absolute -top-1.5 w-2.5 h-2.5 rounded-full bg-blue-500 ring-2 ring-blue-100"
-                            />
-                        </div>
-                    </div>
-                    );
-                })}
-            </div>
-
-            <div className="grid grid-cols-4 pt-1.5">
-                {monthlyTrend.map((item) => (
-                    <div key={item.label} className="text-center text-[8px] font-black text-slate-500">
-                        {item.label}
-                    </div>
-                ))}
-            </div>
-        </motion.section>
-    );
-}
-
 export function StatsPanel() {
-    const [mode, setMode] = useState("monthly");
+    const [stats, setStats] = useState(defaultStats);
+    const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthState);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState("");
+    const vehicleStats = stats.vehicleStats;
+    const totalActiveVehicles = stats.totalActiveVehicles;
+    const maxTripCount = Math.max(...vehicleStats.map((item) => item.trips), 1);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        async function loadStats() {
+            try {
+                setIsLoading(true);
+                setError("");
+
+                const params = new URLSearchParams({
+                    month: String(selectedMonth.month),
+                    year: String(selectedMonth.year),
+                });
+                const response = await fetch(`/api/stats?${params.toString()}`, { cache: "no-store" });
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    throw new Error(result.error || "Không thể tải thống kê.");
+                }
+
+                if (isMounted) {
+                    setStats({
+                        currentMonthLabel: result.currentMonthLabel,
+                        vehicleStats: result.vehicleStats,
+                        totalActiveVehicles: result.totalActiveVehicles,
+                    });
+                }
+            } catch (loadError) {
+                console.error("Stats load error:", loadError);
+                if (isMounted) setError("Không tải được dữ liệu Sheet");
+            } finally {
+                if (isMounted) setIsLoading(false);
+            }
+        }
+
+        loadStats();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [selectedMonth]);
 
     return (
         <motion.div
@@ -275,15 +255,28 @@ export function StatsPanel() {
             transition={{ type: "spring", damping: 24, stiffness: 280 }}
             className="flex-1 flex flex-col"
         >
-            <div className="w-[306px] max-w-full mx-auto flex flex-col gap-2">
+            <div className="w-[306px] max-w-full mx-auto flex flex-col gap-2 pb-3">
                 <MonthToolbar
-                    mode={mode}
-                    onToggleMode={() => setMode((currentMode) => (currentMode === "monthly" ? "trend" : "monthly"))}
+                    currentMonthLabel={isLoading ? getMonthLabel(selectedMonth) : stats.currentMonthLabel}
+                    totalActiveVehicles={totalActiveVehicles}
+                    isLoading={isLoading}
+                    onPreviousMonth={() => setSelectedMonth((currentMonth) => moveMonth(currentMonth, -1))}
+                    onNextMonth={() => setSelectedMonth((currentMonth) => moveMonth(currentMonth, 1))}
+                    onCurrentMonth={() => setSelectedMonth(getCurrentMonthState())}
                 />
 
-                <AnimatePresence mode="wait" initial={false}>
-                    {mode === "monthly" ? <MonthlySummary /> : <TrendSummary />}
-                </AnimatePresence>
+                {error && (
+                    <div className="rounded-lg bg-red-50 border border-red-100 px-2.5 py-1 text-[9px] font-bold text-red-500 text-center">
+                        {error}
+                    </div>
+                )}
+
+                <MonthlySummary
+                    vehicleStats={vehicleStats}
+                    maxTripCount={maxTripCount}
+                    totalActiveVehicles={totalActiveVehicles}
+                    isLoading={isLoading}
+                />
             </div>
         </motion.div>
     );
