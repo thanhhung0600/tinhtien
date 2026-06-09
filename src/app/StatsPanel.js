@@ -267,6 +267,7 @@ function PdfReport({
     isExporting,
     onClosePreview,
     onDownloadPdf,
+    previewScale,
 }) {
     const reportTotals = {
         price: totals.price ?? vehicleStats.reduce((sum, item) => sum + getSheetPrice(item), 0),
@@ -282,6 +283,14 @@ function PdfReport({
         <div
             className={isPreviewOpen ? "fixed inset-0 z-[99990] bg-slate-950/55 backdrop-blur-sm p-3" : "fixed -left-[9999px] top-0 bg-white"}
         >
+            <style jsx global>{`
+                [data-pdf-report="true"],
+                [data-pdf-report="true"] * {
+                    -webkit-text-size-adjust: none;
+                    text-size-adjust: none;
+                }
+            `}</style>
+
             {isPreviewOpen && (
                 <div className="h-full flex flex-col gap-3">
                     <div className="shrink-0 rounded-2xl bg-white border border-slate-200 shadow-lg px-3 py-2 flex items-center justify-between gap-2">
@@ -310,19 +319,35 @@ function PdfReport({
                         </div>
                     </div>
 
-                    <div className="min-h-0 flex-1 overflow-auto rounded-2xl bg-slate-200/80 p-3">
-                        <div className="mx-auto w-[794px] max-w-none shadow-2xl">
-                            <PdfReportContent
-                                reportRef={reportRef}
-                                currentMonthLabel={currentMonthLabel}
-                                dateRange={dateRange}
-                                vehicleStats={vehicleStats}
-                                totalActiveVehicles={totalActiveVehicles}
-                                reportTotals={reportTotals}
-                                profitPercent={profitPercent}
-                                fuelPercent={fuelPercent}
-                                commissionPercent={commissionPercent}
-                            />
+                    <div className="min-h-0 flex-1 overflow-auto rounded-2xl bg-slate-200/80 p-2 sm:p-3">
+                        <div
+                            className="mx-auto"
+                            style={{
+                                width: 794 * previewScale,
+                                height: 1123 * previewScale,
+                                minHeight: 0,
+                            }}
+                        >
+                            <div
+                                className="origin-top-left shadow-2xl"
+                                style={{
+                                    width: 794,
+                                    transform: `scale(${previewScale})`,
+                                    transformOrigin: "top left",
+                                }}
+                            >
+                                <PdfReportContent
+                                    reportRef={reportRef}
+                                    currentMonthLabel={currentMonthLabel}
+                                    dateRange={dateRange}
+                                    vehicleStats={vehicleStats}
+                                    totalActiveVehicles={totalActiveVehicles}
+                                    reportTotals={reportTotals}
+                                    profitPercent={profitPercent}
+                                    fuelPercent={fuelPercent}
+                                    commissionPercent={commissionPercent}
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -368,7 +393,10 @@ function PdfReportContent({
                     color: "#0f172a",
                     fontFamily: '"Segoe UI", Arial, Tahoma, sans-serif',
                     WebkitFontSmoothing: "antialiased",
+                    WebkitTextSizeAdjust: "none",
+                    textSizeAdjust: "none",
                     textRendering: "geometricPrecision",
+                    lineHeight: 1.2,
                 }}
             >
                 <div style={{ borderBottom: "3px solid #2563eb", paddingBottom: 18, marginBottom: 28 }}>
@@ -489,6 +517,7 @@ export function StatsPanel() {
     const [isLoading, setIsLoading] = useState(true);
     const [isExporting, setIsExporting] = useState(false);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [previewScale, setPreviewScale] = useState(1);
     const [error, setError] = useState("");
     const [pdfStats, setPdfStats] = useState(defaultStats);
     const reportRef = useRef(null);
@@ -543,6 +572,25 @@ export function StatsPanel() {
         };
     }, [selectedMonth]);
 
+    useEffect(() => {
+        if (!isPreviewOpen) return;
+
+        const updatePreviewScale = () => {
+            const viewportWidth = window.visualViewport?.width || window.innerWidth;
+            const availableWidth = Math.max(280, viewportWidth - 40);
+            setPreviewScale(Math.min(1, availableWidth / 794));
+        };
+
+        updatePreviewScale();
+        window.addEventListener("resize", updatePreviewScale);
+        window.visualViewport?.addEventListener("resize", updatePreviewScale);
+
+        return () => {
+            window.removeEventListener("resize", updatePreviewScale);
+            window.visualViewport?.removeEventListener("resize", updatePreviewScale);
+        };
+    }, [isPreviewOpen]);
+
     const refreshPdfStats = async () => {
         const params = new URLSearchParams({
             month: String(selectedMonth.month),
@@ -570,6 +618,9 @@ export function StatsPanel() {
         try {
             setIsExporting(true);
             await refreshPdfStats();
+            const viewportWidth = window.visualViewport?.width || window.innerWidth;
+            const availableWidth = Math.max(280, viewportWidth - 40);
+            setPreviewScale(Math.min(1, availableWidth / 794));
             setIsPreviewOpen(true);
         } catch (previewError) {
             console.error("PDF preview error:", previewError);
@@ -604,6 +655,9 @@ export function StatsPanel() {
                     const report = clonedDocument.querySelector("[data-pdf-report='true']");
                     if (report) {
                         report.style.fontFamily = '"Segoe UI", Arial, Tahoma, sans-serif';
+                        report.style.webkitTextSizeAdjust = "none";
+                        report.style.textSizeAdjust = "none";
+                        report.style.lineHeight = "1.2";
                     }
                 },
             });
@@ -669,6 +723,7 @@ export function StatsPanel() {
                     isExporting={isExporting}
                     onClosePreview={() => setIsPreviewOpen(false)}
                     onDownloadPdf={downloadPdfReport}
+                    previewScale={previewScale}
                 />
             </div>
         </motion.div>
