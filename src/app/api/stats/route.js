@@ -73,6 +73,10 @@ function getMonthKey(date) {
     return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
+function formatDateLabel(date) {
+    return `${String(date.getUTCDate()).padStart(2, "0")}/${String(date.getUTCMonth() + 1).padStart(2, "0")}/${date.getUTCFullYear()}`;
+}
+
 function getRecentMonths(year, monthIndex) {
     return Array.from({ length: 4 }, (_, index) => {
         const date = new Date(Date.UTC(year, monthIndex - 3 + index, 1));
@@ -94,6 +98,8 @@ export async function GET(request) {
         const currentMonthKey = `${year}-${String(month).padStart(2, "0")}`;
         const monthlyTrend = getRecentMonths(year, monthIndex);
         const trendByMonth = new Map(monthlyTrend.map((item) => [item.key, item]));
+        let firstDataDate = null;
+        let lastDataDate = null;
 
         const sheets = google.sheets({ version: "v4", auth: getGoogleAuth() });
         const response = await sheets.spreadsheets.values.batchGet({
@@ -108,7 +114,10 @@ export async function GET(request) {
         const vehicleStats = vehicleSheets.map((sheet, sheetIndex) => {
             const rows = valueRanges[sheetIndex]?.values || [];
             let trips = 0;
-            let revenue = 0;
+            let price = 0;
+            let fuel = 0;
+            let commission = 0;
+            let profit = 0;
 
             rows.forEach((row) => {
                 const date = parseSheetDate(row[0]);
@@ -119,21 +128,67 @@ export async function GET(request) {
                 if (trendItem) trendItem.value += 1;
 
                 if (rowMonthKey === currentMonthKey) {
+                    const rowPrice = parseMoney(row[2]);
+                    const rowFuel = parseMoney(row[3]);
+                    const rowCommission = parseMoney(row[5]);
+                    const hasProfitCell = row[6] !== null && row[6] !== undefined && row[6] !== "";
+                    const rowProfit = hasProfitCell ? parseMoney(row[6]) : rowPrice - rowFuel - rowCommission;
+
+                    if (!firstDataDate || date < firstDataDate) firstDataDate = date;
+                    if (!lastDataDate || date > lastDataDate) lastDataDate = date;
+
                     trips += 1;
-                    revenue += parseMoney(row[6]);
+                    price += rowPrice;
+                    fuel += rowFuel;
+                    commission += rowCommission;
+                    profit += rowProfit;
                 }
             });
 
-            return { ...sheet, trips, revenue };
+            return {
+                ...sheet,
+                trips,
+                price,
+                total: profit,
+                revenue: profit,
+                fuel,
+                commission,
+                profit,
+                averageRevenue: trips > 0 ? profit / trips : 0,
+            };
         });
 
         const totalActiveVehicles = vehicleStats.reduce((sum, item) => sum + item.trips, 0);
+        const totals = vehicleStats.reduce(
+            (summary, item) => ({
+                price: summary.price + item.price,
+                revenue: summary.revenue + item.revenue,
+                fuel: summary.fuel + item.fuel,
+                commission: summary.commission + item.commission,
+                profit: summary.profit + item.profit,
+                total: summary.total + item.total,
+            }),
+            { price: 0, revenue: 0, fuel: 0, commission: 0, profit: 0, total: 0 }
+        );
 
+        const dateRange = firstDataDate && lastDataDate
+            ? {
+                from: formatDateLabel(firstDataDate),
+                to: formatDateLabel(lastDataDate),
+                label: `Dữ liệu từ ngày ${formatDateLabel(firstDataDate)} đến ngày ${formatDateLabel(lastDataDate)}`,
+            }
+            : {
+                from: "",
+                to: "",
+                label: "Chưa có dữ liệu trong tháng này",
+            };
         return NextResponse.json({
             success: true,
             currentMonthLabel: `THÁNG ${month}, ${year}`,
             vehicleStats,
             totalActiveVehicles,
+            totals,
+            dateRange,
             monthlyTrend,
         });
     } catch (error) {
