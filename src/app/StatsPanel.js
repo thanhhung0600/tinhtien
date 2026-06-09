@@ -267,7 +267,7 @@ function PdfReport({
     isExporting,
     onClosePreview,
     onDownloadPdf,
-    previewScale,
+    previewImageUrl,
 }) {
     const reportTotals = {
         price: totals.price ?? vehicleStats.reduce((sum, item) => sum + getSheetPrice(item), 0),
@@ -320,40 +320,24 @@ function PdfReport({
                     </div>
 
                     <div className="min-h-0 flex-1 overflow-auto rounded-2xl bg-slate-200/80 p-2 sm:p-3">
-                        <div
-                            className="mx-auto"
-                            style={{
-                                width: 794 * previewScale,
-                                height: 1123 * previewScale,
-                                minHeight: 0,
-                            }}
-                        >
-                            <div
-                                className="origin-top-left shadow-2xl"
-                                style={{
-                                    width: 794,
-                                    transform: `scale(${previewScale})`,
-                                    transformOrigin: "top left",
-                                }}
-                            >
-                                <PdfReportContent
-                                    reportRef={reportRef}
-                                    currentMonthLabel={currentMonthLabel}
-                                    dateRange={dateRange}
-                                    vehicleStats={vehicleStats}
-                                    totalActiveVehicles={totalActiveVehicles}
-                                    reportTotals={reportTotals}
-                                    profitPercent={profitPercent}
-                                    fuelPercent={fuelPercent}
-                                    commissionPercent={commissionPercent}
-                                />
+                        {previewImageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                                src={previewImageUrl}
+                                alt="Bản xem trước báo cáo PDF"
+                                className="mx-auto h-auto w-full max-w-[794px] rounded-sm bg-white shadow-2xl"
+                                draggable={false}
+                            />
+                        ) : (
+                            <div className="h-full min-h-[320px] rounded-xl bg-white/70 flex items-center justify-center text-[12px] font-black text-slate-500">
+                                Đang tạo bản xem trước...
                             </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             )}
 
-            {!isPreviewOpen && (
+            <div className="fixed -left-[9999px] top-0 bg-white">
                 <PdfReportContent
                     reportRef={reportRef}
                     currentMonthLabel={currentMonthLabel}
@@ -365,7 +349,7 @@ function PdfReport({
                     fuelPercent={fuelPercent}
                     commissionPercent={commissionPercent}
                 />
-            )}
+            </div>
         </div>
     );
 }
@@ -517,7 +501,7 @@ export function StatsPanel() {
     const [isLoading, setIsLoading] = useState(true);
     const [isExporting, setIsExporting] = useState(false);
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-    const [previewScale, setPreviewScale] = useState(1);
+    const [previewImageUrl, setPreviewImageUrl] = useState("");
     const [error, setError] = useState("");
     const [pdfStats, setPdfStats] = useState(defaultStats);
     const reportRef = useRef(null);
@@ -572,25 +556,6 @@ export function StatsPanel() {
         };
     }, [selectedMonth]);
 
-    useEffect(() => {
-        if (!isPreviewOpen) return;
-
-        const updatePreviewScale = () => {
-            const viewportWidth = window.visualViewport?.width || window.innerWidth;
-            const availableWidth = Math.max(280, viewportWidth - 40);
-            setPreviewScale(Math.min(1, availableWidth / 794));
-        };
-
-        updatePreviewScale();
-        window.addEventListener("resize", updatePreviewScale);
-        window.visualViewport?.addEventListener("resize", updatePreviewScale);
-
-        return () => {
-            window.removeEventListener("resize", updatePreviewScale);
-            window.visualViewport?.removeEventListener("resize", updatePreviewScale);
-        };
-    }, [isPreviewOpen]);
-
     const refreshPdfStats = async () => {
         const params = new URLSearchParams({
             month: String(selectedMonth.month),
@@ -603,12 +568,47 @@ export function StatsPanel() {
             throw new Error(result.error || "Không tải được dữ liệu PDF.");
         }
 
-        setPdfStats({
+        const nextStats = {
             currentMonthLabel: result.currentMonthLabel,
             vehicleStats: result.vehicleStats,
             totalActiveVehicles: result.totalActiveVehicles,
             totals: result.totals || defaultStats.totals,
             dateRange: result.dateRange || defaultStats.dateRange,
+        };
+
+        setPdfStats(nextStats);
+        return nextStats;
+    };
+
+    const waitForReportRender = async () => {
+        if (document.fonts?.ready) {
+            await document.fonts.ready;
+        }
+
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    };
+
+    const captureReportCanvas = async () => {
+        if (!reportRef.current) {
+            throw new Error("Không tìm thấy nội dung báo cáo.");
+        }
+
+        await waitForReportRender();
+
+        const { default: html2canvas } = await import("html2canvas");
+        return html2canvas(reportRef.current, {
+            scale: 2,
+            backgroundColor: "#ffffff",
+            useCORS: true,
+            onclone: (clonedDocument) => {
+                const report = clonedDocument.querySelector("[data-pdf-report='true']");
+                if (report) {
+                    report.style.fontFamily = '"Segoe UI", Arial, Tahoma, sans-serif';
+                    report.style.webkitTextSizeAdjust = "none";
+                    report.style.textSizeAdjust = "none";
+                    report.style.lineHeight = "1.2";
+                }
+            },
         });
     };
 
@@ -617,14 +617,15 @@ export function StatsPanel() {
 
         try {
             setIsExporting(true);
-            await refreshPdfStats();
-            const viewportWidth = window.visualViewport?.width || window.innerWidth;
-            const availableWidth = Math.max(280, viewportWidth - 40);
-            setPreviewScale(Math.min(1, availableWidth / 794));
+            setPreviewImageUrl("");
             setIsPreviewOpen(true);
+            await refreshPdfStats();
+            const canvas = await captureReportCanvas();
+            setPreviewImageUrl(canvas.toDataURL("image/png"));
         } catch (previewError) {
             console.error("PDF preview error:", previewError);
             setError("Không tải được bản xem trước PDF");
+            setIsPreviewOpen(false);
         } finally {
             setIsExporting(false);
         }
@@ -637,30 +638,10 @@ export function StatsPanel() {
             setIsExporting(true);
             await refreshPdfStats();
 
-            if (document.fonts?.ready) {
-                await document.fonts.ready;
-            }
-
-            await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-
-            const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-                import("html2canvas"),
+            const [{ jsPDF }, canvas] = await Promise.all([
                 import("jspdf"),
+                captureReportCanvas(),
             ]);
-            const canvas = await html2canvas(reportRef.current, {
-                scale: 2,
-                backgroundColor: "#ffffff",
-                useCORS: true,
-                onclone: (clonedDocument) => {
-                    const report = clonedDocument.querySelector("[data-pdf-report='true']");
-                    if (report) {
-                        report.style.fontFamily = '"Segoe UI", Arial, Tahoma, sans-serif';
-                        report.style.webkitTextSizeAdjust = "none";
-                        report.style.textSizeAdjust = "none";
-                        report.style.lineHeight = "1.2";
-                    }
-                },
-            });
             const imageData = canvas.toDataURL("image/png");
             const pdf = new jsPDF("p", "mm", "a4");
             const pageWidth = pdf.internal.pageSize.getWidth();
@@ -721,9 +702,12 @@ export function StatsPanel() {
                     totals={pdfStats.totals || defaultStats.totals}
                     isPreviewOpen={isPreviewOpen}
                     isExporting={isExporting}
-                    onClosePreview={() => setIsPreviewOpen(false)}
+                    onClosePreview={() => {
+                        setIsPreviewOpen(false);
+                        setPreviewImageUrl("");
+                    }}
                     onDownloadPdf={downloadPdfReport}
-                    previewScale={previewScale}
+                    previewImageUrl={previewImageUrl}
                 />
             </div>
         </motion.div>
